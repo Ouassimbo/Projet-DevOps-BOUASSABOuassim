@@ -1,0 +1,43 @@
+name: CI Pipeline BOUASSA
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout du code
+      uses: actions/checkout@v3
+    
+    - name: Configuration JDK 11
+      uses: actions/setup-java@v3
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+    
+    - name: Cache Maven
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+    
+    - name: Compilation avec Maven
+      run: mvn clean compile
+    
+    - name: Exécution des tests
+      run: mvn test
+    
+    - name: Package de l'application
+      run: mvn package
+    
+    - name: Archivage des artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: projet-devops-bouassa
+        path: target/*.jar
