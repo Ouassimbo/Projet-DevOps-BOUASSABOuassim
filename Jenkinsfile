@@ -6,11 +6,6 @@ pipeline {
         jdk 'JDK-11'
     }
     
-    environment {
-        JAVA_HOME = tool('JDK-11')
-        PATH = "${JAVA_HOME}/bin:${env.PATH}"
-    }
-    
     stages {
         stage('Checkout') {
             steps {
@@ -22,13 +17,29 @@ pipeline {
             }
         }
         
+        stage('Vérification Environnement') {
+            steps {
+                echo '========================================='
+                echo 'Vérification des outils'
+                echo '========================================='
+                script {
+                    def javaHome = tool name: 'JDK-11', type: 'jdk'
+                    env.JAVA_HOME = "${javaHome}"
+                    env.PATH = "${javaHome}/bin:${env.PATH}"
+                }
+                sh 'echo "JAVA_HOME = $JAVA_HOME"'
+                sh 'echo "PATH = $PATH"'
+                sh 'which java'
+                sh 'java -version'
+                sh 'mvn -version'
+            }
+        }
+        
         stage('Build') {
             steps {
                 echo '========================================='
                 echo 'Étape 2 : Compilation du projet'
                 echo '========================================='
-                sh 'java -version'
-                sh 'mvn -version'
                 sh 'mvn clean compile'
                 echo 'Compilation réussie ✓'
             }
