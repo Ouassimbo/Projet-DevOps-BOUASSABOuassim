@@ -7,32 +7,31 @@ pipeline {
     }
     
     environment {
-        PROJECT_NAME = 'PipeLine-BOUASSABOuassim'
-        AUTHOR = 'BOUASSA Bouassim'
-        JAVA_HOME = "${tool 'JDK-11'}"
-        PATH = "${env.JAVA_HOME}/bin:${env.PATH}"
+        JAVA_HOME = tool 'JDK-11'
+        PATH = "${JAVA_HOME}/bin:${env.PATH}"
     }
     
     stages {
         stage('Checkout') {
             steps {
                 echo '========================================='
-                echo 'Etape 1 : Recuperation du code depuis GitHub'
+                echo 'Etape 1 : Recuperation du code'
                 echo '========================================='
                 checkout scm
-                echo 'Code recupere avec succes'
             }
         }
         
         stage('Verification Environnement') {
             steps {
                 echo '========================================='
-                echo 'Verification de Java et Maven'
+                echo 'Verification Java et Maven'
                 echo '========================================='
                 sh '''
-                    echo "JAVA_HOME = $JAVA_HOME"
-                    echo "PATH = $PATH"
-                    java -version
+                    export JAVA_HOME=${JAVA_HOME}
+                    export PATH=${JAVA_HOME}/bin:${PATH}
+                    echo "JAVA_HOME = ${JAVA_HOME}"
+                    ${JAVA_HOME}/bin/java -version
+                    ${JAVA_HOME}/bin/javac -version
                     mvn -version
                 '''
             }
@@ -41,20 +40,26 @@ pipeline {
         stage('Build') {
             steps {
                 echo '========================================='
-                echo 'Etape 2 : Compilation du projet'
+                echo 'Compilation'
                 echo '========================================='
-                sh 'mvn clean compile'
-                echo 'Compilation reussie'
+                sh '''
+                    export JAVA_HOME=${JAVA_HOME}
+                    export PATH=${JAVA_HOME}/bin:${PATH}
+                    mvn clean compile
+                '''
             }
         }
         
         stage('Test') {
             steps {
                 echo '========================================='
-                echo 'Etape 3 : Execution des tests unitaires'
+                echo 'Tests'
                 echo '========================================='
-                sh 'mvn test'
-                echo 'Tests executes avec succes'
+                sh '''
+                    export JAVA_HOME=${JAVA_HOME}
+                    export PATH=${JAVA_HOME}/bin:${PATH}
+                    mvn test
+                '''
             }
             post {
                 always {
@@ -66,76 +71,70 @@ pipeline {
         stage('Package') {
             steps {
                 echo '========================================='
-                echo 'Etape 4 : Creation du package JAR'
+                echo 'Package'
                 echo '========================================='
-                sh 'mvn package -DskipTests'
-                echo 'Package cree avec succes'
+                sh '''
+                    export JAVA_HOME=${JAVA_HOME}
+                    export PATH=${JAVA_HOME}/bin:${PATH}
+                    mvn package -DskipTests
+                '''
             }
         }
         
         stage('Archive') {
             steps {
                 echo '========================================='
-                echo 'Etape 5 : Archivage des artifacts'
+                echo 'Archive'
                 echo '========================================='
                 archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
-                echo 'Artifacts archives avec succes'
             }
         }
         
         stage('Deploy') {
             steps {
                 echo '========================================='
-                echo 'Etape 6 : Deploiement de l application'
+                echo 'Deploy'
                 echo '========================================='
                 sh '''
-                    echo "Simulation de deploiement..."
-                    echo "Application deployee par ${AUTHOR}"
-                    echo "Projet : ${PROJECT_NAME}"
-                    java -jar target/projet-devops-bouassa-1.0-SNAPSHOT.jar
+                    export JAVA_HOME=${JAVA_HOME}
+                    export PATH=${JAVA_HOME}/bin:${PATH}
+                    echo "Application deployee par BOUASSA Bouassim"
+                    ${JAVA_HOME}/bin/java -jar target/projet-devops-bouassa-1.0-SNAPSHOT.jar
                 '''
-                echo 'Deploiement reussi'
             }
         }
         
         stage('Notify Slack') {
             steps {
-                echo '========================================='
-                echo 'Etape 7 : Notification Slack'
-                echo '========================================='
+                echo 'Notification Slack'
                 slackSend(
                     channel: '#jenkins',
                     color: 'good',
-                    message: "Build reussi! Projet: ${env.JOB_NAME} Build: #${env.BUILD_NUMBER}"
+                    message: "Build ${env.BUILD_NUMBER} reussi!"
                 )
             }
         }
     }
     
     post {
-        always {
-            echo 'Pipeline termine - Nettoyage en cours...'
-            cleanWs()
-        }
         success {
-            echo '========================================='
-            echo 'SUCCES DU PIPELINE'
-            echo '========================================='
+            echo 'SUCCES!'
             slackSend(
                 channel: '#jenkins',
                 color: 'good',
-                message: "Pipeline ${env.JOB_NAME} #${env.BUILD_NUMBER} termine avec succes"
+                message: "Pipeline ${env.JOB_NAME} #${env.BUILD_NUMBER} reussi"
             )
         }
         failure {
-            echo '========================================='
-            echo 'ECHEC DU PIPELINE'
-            echo '========================================='
+            echo 'ECHEC!'
             slackSend(
                 channel: '#jenkins',
                 color: 'danger',
-                message: "Pipeline ${env.JOB_NAME} #${env.BUILD_NUMBER} a echoue"
+                message: "Pipeline ${env.JOB_NAME} #${env.BUILD_NUMBER} echoue"
             )
+        }
+        always {
+            cleanWs()
         }
     }
 }
