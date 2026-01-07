@@ -37,7 +37,7 @@ jobs:
       run: mvn package
     
     - name: Archivage des artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: projet-devops-bouassa
         path: target/*.jar
